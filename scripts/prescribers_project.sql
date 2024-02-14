@@ -108,11 +108,19 @@ WHERE cbsaname LIKE '%TN%';
 
 -- b. Which cbsa has the largest combined population? Which has the smallest? Report the CBSA name and total population.
 
-SELECT cbsa.cbsaname, MIN(population.population), MAX(population.population)
+SELECT cbsa.cbsaname, SUM(population.population)
 FROM cbsa
 INNER JOIN population
-FROM population.fipscounty = cbsa.fipscounty
-GROUP BY cbsa.csaname;
+ON population.fipscounty = cbsa.fipscounty
+GROUP BY cbsa.cBsaname
+ORDER BY SUM(population.population);
+
+--Answer: largest combines population = Nashville-Davidson--Murfreesboro--Franklin, TN
+-- smallest combined poplation = Morristown, TN
+
+-- c. What is the largest (in terms of population) county which is not included in a CBSA? Report the county name and population.
+
+
 
 
 
