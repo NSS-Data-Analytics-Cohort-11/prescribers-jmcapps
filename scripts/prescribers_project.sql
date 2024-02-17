@@ -11,13 +11,20 @@ ORDER BY total_claims DESC;
 
 -- b. Repeat the above, but this time report the nppes_provider_first_name, nppes_provider_last_org_name,  specialty_description, and the total number of claims.
 
-SELECT prescriber.npi, SUM(prescription.total_claim_count) AS total_claims,
-prescriber.nppes_provider_first_name, prescriber.nppes_provider_last_org_name, prescriber.specialty_description
+SELECT prescriber.npi, 
+	SUM(prescription.total_claim_count) AS total_claims,
+	prescriber.nppes_provider_first_name, 
+	prescriber.nppes_provider_last_org_name, 
+	prescriber.specialty_description
 FROM prescriber
 INNER JOIN prescription
 ON prescription.npi = prescriber.npi
-GROUP BY prescriber.npi, prescriber.nppes_provider_first_name, prescriber.nppes_provider_last_org_name, prescriber.specialty_description
-ORDER BY total_claims DESC;
+GROUP BY prescriber.npi, 
+	prescriber.nppes_provider_first_name, 
+	prescriber.nppes_provider_last_org_name, 
+	prescriber.specialty_description
+ORDER BY total_claims DESC
+LIMIT 1;
 
 --Answer: Bruce Pendley...Family Practice
 
@@ -55,7 +62,32 @@ FROM prescriber
 LEFT JOIN prescription
 ON prescription.npi = prescriber.npi
 GROUP BY prescriber.specialty_description
-HAVING SUM(prescription.total_claim_counT) IS NULL;
+HAVING SUM(prescription.total_claim_counT) IS NULL
+ORDER BY prescriber.specialty_description;
+
+-- d. **Difficult Bonus:** *Do not attempt until you have solved all other problems!* For each specialty, report the percentage of total claims by that specialty which are for opioids. Which specialties have a high percentage of opioids?
+
+SELECT
+	specialty_description,
+	SUM(
+		CASE WHEN opioid_drug_flag = 'Y' THEN total_claim_count
+		ELSE 0
+	END
+	) as opioid_claims,
+	
+	SUM(total_claim_count) AS total_claims,
+	
+	SUM(
+		CASE WHEN opioid_drug_flag = 'Y' THEN total_claim_count
+		ELSE 0
+	END
+	) * 100.0 /  SUM(total_claim_count) AS opioid_percentage
+FROM prescriber
+INNER JOIN prescription
+USING(npi)
+INNER JOIN drug
+USING(drug_name)
+GROUP BY specialty_description
 
 -- 3. a. Which drug (generic_name) had the highest total drug cost?
 
@@ -107,11 +139,13 @@ ORDER BY SUM(total_drug_cost);
 
 -- 5. a. How many CBSAs are in Tennessee?
 
-SELECT COUNT(cbsaname)
+SELECT COUNT(*)
 FROM cbsa
-WHERE cbsaname LIKE '%TN%';
+INNER JOIN fips_county
+USING (fipscounty)
+WHERE state = 'TN';
 
---Answer: 56
+--Answer: 42
 
 -- b. Which cbsa has the largest combined population? Which has the smallest? Report the CBSA name and total population.
 
@@ -119,7 +153,7 @@ SELECT cbsa.cbsaname, SUM(population.population)
 FROM cbsa
 INNER JOIN population
 ON population.fipscounty = cbsa.fipscounty
-GROUP BY cbsa.cBsaname
+GROUP BY cbsa.cbsaname
 ORDER BY SUM(population.population);
 
 --Answer: largest combines population = Nashville-Davidson--Murfreesboro--Franklin, TN
@@ -136,7 +170,7 @@ USING (fipscounty)
 WHERE cbsa.cbsa IS NULL
 ORDER BY population.population DESC;
 
---Answer: Sevier County
+--Answer: Sevier County, 95523
 
 -- 6. a. Find all rows in the prescription table where total_claims is at least 3000. Report the drug_name and the total_claim_count.
 
