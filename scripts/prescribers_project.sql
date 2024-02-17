@@ -50,6 +50,13 @@ ORDER BY total_claims DESC;
 
 -- c. **Challenge Question:** Are there any specialties that appear in the prescriber table that have no associated prescriptions in the prescription table?
 
+SELECT prescriber.specialty_description, SUM(prescription.total_claim_count)
+FROM prescriber
+LEFT JOIN prescription
+ON prescription.npi = prescriber.npi
+GROUP BY prescriber.specialty_description
+HAVING SUM(prescription.total_claim_counT) IS NULL;
+
 -- 3. a. Which drug (generic_name) had the highest total drug cost?
 
 SELECT drug.generic_name, SUM(prescription.total_drug_cost)
@@ -170,15 +177,38 @@ AND drug.opioid_drug_flag = 'Y';
 
 -- b. Next, report the number of claims per drug per prescriber. Be sure to include all combinations, whether or not the prescriber had any claims. You should report the npi, the drug name, and the number of claims (total_claim_count).
 
-SELECT prescriber.npi, drug.drug_name, SUM(prescription.total_claim_count)
+SELECT prescriber.npi, drug.drug_name, 
+	(SELECT 
+		SUM(prescription.total_claim_count)
+	FROM prescription
+	WHERE prescriber.npi = prescription.npi
+	AND prescription.drug_name = drug.drug_name) AS total_claim
 FROM prescriber 
-CROSS JOIN prescription
-LEFT JOIN drug
-ON drug.drug_name = prescription.drug_name
+CROSS JOIN drug
+INNER JOIN prescription
+USING (npi)
 WHERE prescriber.specialty_description ILIKE 'pain management'
 AND prescriber.nppes_provider_city ILIKE 'Nashville'
 AND drug.opioid_drug_flag = 'Y'
-GROUP BY prescriber.npi, drug.drug_name;
+GROUP BY prescriber.npi, drug.drug_name
+ORDER BY prescriber.npi DESC;
+
+-- 7. c. Finally, if you have not done so already, fill in any missing values for total_claim_count with 0.
+
+SELECT prescriber.npi, drug.drug_name, 
+	(SELECT(COALESCE(SUM(prescription.total_claim_count),0))
+	FROM prescription
+	WHERE prescription.npi = prescriber.npi
+	AND prescription.drug_name = drug.drug_name) AS total_claim
+FROM prescriber 
+CROSS JOIN drug
+INNER JOIN prescription
+USING (npi)
+WHERE prescriber.specialty_description ILIKE 'pain management'
+AND prescriber.nppes_provider_city ILIKE 'Nashville'
+AND drug.opioid_drug_flag = 'Y'
+GROUP BY prescriber.npi, drug.drug_name
+ORDER BY prescriber.npi DESC;
 
 
 
